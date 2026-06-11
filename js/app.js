@@ -34,8 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initLiveFeedSim();
   initNewsletterForm();
 
-  // Initial Product Catalog Render
-  renderProducts();
+  // Initial Product Catalog Render from MongoDB Database
+  window.SecureCatalog.fetchProducts().then(() => {
+    renderProducts();
+  });
 
   // Welcome secure notification
   setTimeout(() => {

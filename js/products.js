@@ -1,7 +1,11 @@
-const products = [
+// In-memory catalog cache loaded from database
+let products = [];
+
+// Fallback offline catalog (in case database connection fails)
+const fallbackCatalog = [
   {
     id: "sv-sentinel-4k",
-    name: "SV-Sentinel 4K",
+    name: "SV-Sentinel 4K (Offline)",
     category: "dome",
     price: 189.99,
     rating: 4.9,
@@ -14,7 +18,7 @@ const products = [
   },
   {
     id: "sv-apex-shield",
-    name: "SV-Apex Shield",
+    name: "SV-Apex Shield (Offline)",
     category: "bullet",
     price: 249.99,
     rating: 4.8,
@@ -27,7 +31,7 @@ const products = [
   },
   {
     id: "sv-nano-stealth",
-    name: "SV-Nano Stealth",
+    name: "SV-Nano Stealth (Offline)",
     category: "smart-home",
     price: 129.99,
     rating: 4.7,
@@ -37,50 +41,31 @@ const products = [
     image: "assets/images/stealth.png",
     description: "Minimalist, unobtrusive smart home indoor camera featuring high-fidelity two-way audio and precise human sound alerts.",
     features: ["Human Sound Detection", "2-Way Audio", "Dual-Band WiFi", "Sleek Spherical Design"]
-  },
-  {
-    id: "sv-thermal-aegis",
-    name: "SV-Thermal Aegis",
-    category: "bullet",
-    price: 459.99,
-    rating: 4.9,
-    reviewsCount: 34,
-    tag: "PRO SERIES",
-    badgeClass: "badge-cyan",
-    image: "assets/images/bullet.png",
-    description: "Military-grade thermal imaging bullet camera with heat signature mapping, perfect for long-distance perimeter guards.",
-    features: ["Thermal Signature Mapping", "Perimeter Guard AI", "PoE Supported", "Rugged Steel Casing"]
-  },
-  {
-    id: "sv-panoptic-dome",
-    name: "SV-Panoptic Dome",
-    category: "dome",
-    price: 299.99,
-    rating: 4.9,
-    reviewsCount: 88,
-    tag: "NEW ARRIVAL",
-    badgeClass: "badge-green",
-    image: "assets/images/dome.png",
-    description: "Multi-lens professional dome security camera providing complete 180° horizontal coverage without lens distortion.",
-    features: ["180° Horizon Field", "Triple Lens Matrix", "AI Face Recognition", "Vandal-Proof IK10"]
-  },
-  {
-    id: "sv-solar-sentinel",
-    name: "SV-Solar Sentinel",
-    category: "smart-home",
-    price: 159.99,
-    rating: 4.6,
-    reviewsCount: 112,
-    tag: "WIRE-FREE",
-    badgeClass: "badge-green",
-    image: "assets/images/stealth.png",
-    description: "A completely wire-free smart home outdoor security hub, featuring high-speed 5G WiFi and micro-solar integration.",
-    features: ["5G WiFi Connection", "Rechargeable Battery", "Micro-Solar Shield", "Smart Sirens"]
   }
 ];
 
 /**
- * Filter and search the product catalog
+ * Fetch product catalog from MongoDB Atlas database API
+ */
+async function fetchProducts() {
+  try {
+    const res = await fetch('/api/products');
+    if (!res.ok) {
+      throw new Error(`API returned status ${res.status}`);
+    }
+    const data = await res.json();
+    products = data;
+    console.log("DATABASE: Successfully loaded products from MongoDB.");
+    return products;
+  } catch (err) {
+    console.warn("DATABASE FAIL: Could not load products from MongoDB. Initializing fallback offline catalog.", err.message);
+    products = fallbackCatalog;
+    return products;
+  }
+}
+
+/**
+ * Filter and search the cached product catalog
  * @param {string} category - 'all', 'bullet', 'dome', 'smart-home'
  * @param {string} search - search query string
  * @param {string} sortBy - 'popular', 'price-low', 'price-high', 'rating'
@@ -120,6 +105,12 @@ function getFilteredProducts(category = 'all', search = '', sortBy = 'popular') 
 
 // Export for browser scripts
 window.SecureCatalog = {
-  products,
-  getFilteredProducts
+  fetchProducts,
+  getFilteredProducts,
+  fallbackCatalog
 };
+
+// Define products getter so it behaves as an array property and can be read by other scripts
+Object.defineProperty(window.SecureCatalog, 'products', {
+  get: function() { return products; }
+});

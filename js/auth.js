@@ -127,19 +127,28 @@ function handleLogin(form) {
     return;
   }
 
-  // Extract a username from email
-  const name = email.split('@')[0];
-  const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
-
   if (window.showToast) {
     window.showToast("Verifying biometric signatures & encryption...", "success");
-    setTimeout(() => {
-      loginUser({
-        name: formattedName,
-        email: email
-      });
+
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    })
+    .then(res => {
+      if (!res.ok) {
+        return res.json().then(data => { throw new Error(data.error || "Authentication failed") });
+      }
+      return res.json();
+    })
+    .then(data => {
+      loginUser(data.user);
       toggleAuthModal(false);
-    }, 1200);
+      form.reset();
+    })
+    .catch(err => {
+      if (window.showToast) window.showToast(`ACCESS DENIED: ${err.message}`, "error");
+    });
   }
 }
 
@@ -170,13 +179,26 @@ function handleRegister(form) {
 
   if (window.showToast) {
     window.showToast("Creating secure sandbox and registering credentials...", "success");
-    setTimeout(() => {
-      loginUser({
-        name: name,
-        email: email
-      });
+
+    fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    })
+    .then(res => {
+      if (!res.ok) {
+        return res.json().then(data => { throw new Error(data.error || "Registration failed") });
+      }
+      return res.json();
+    })
+    .then(data => {
+      loginUser(data.user);
       toggleAuthModal(false);
-    }, 1500);
+      form.reset();
+    })
+    .catch(err => {
+      if (window.showToast) window.showToast(`REGISTRATION DENIED: ${err.message}`, "error");
+    });
   }
 }
 
